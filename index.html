@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Application Bot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center h-screen">
+    <style>
+        body {
+            background-image: radial-gradient(circle, #005c97, #195990, #255689, #2d5482, #32517b, #304e7c, #2f4c7d, #2f497d, #2c4684, #2c428b, #2f3d90, #363795);        
+        }
+        .popup-overlay {
+            background-color: rgba(0, 0, 0, 0.8);
+            transition: opacity 0.3s ease;
+        }
+    </style>
+
+    <div class="fixed top-4 left-4 z-40">
+        <button id="openPopupBtn" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition shadow-lg flex items-center">
+            <span class="font-medium">Try Me</span>
+        </button>
+    </div>
+
+    <!-- Popup Overlay (outside the button div, at the body level) -->
+    <div id="popupOverlay" class="popup-overlay fixed inset-0 opacity-0 pointer-events-none flex items-center justify-center z-50">
+        <div id="popup" class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md transform scale-95 transition-transform">
+            <h2 class="text-xl font-bold mb-4">Keyword Matcher</h2>
+            <textarea id="jobDescription" class="w-full p-2 border rounded mb-4" placeholder="Paste job description here"></textarea>
+            <textarea id="resume" class="w-full p-2 border rounded mb-4" placeholder="Paste your resume here"></textarea>
+            <button id="matchButton" class="bg-blue-500 text-white px-4 py-2 rounded">Match Keywords</button>
+            <div id="matchResult" class="mt-4"></div>
+            <button id="closePopupBtn" class="mt-4 bg-gray-300 text-gray-700 px-4 py-2 rounded">Close</button>
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-lg">
+        <div class="max-w-4xl mx-auto px-4 py-6">
+            <div id="step0">
+                <h2 class="text-2xl font-bold text-center mb-4">Welcome to the Job Application Bot</h2>
+        
+                <div class="mb-6">
+                    <h3 class="text-xl font-semibold text-center">About Us</h3>
+                    <p class="text-gray-700 leading-relaxed text-center">
+                        JobApplicationBot helps streamline your job search by organizing your skills, experience, and documents in one place, making the application process seamless and efficient.
+                    </p>
+                </div>
+        
+                <div class="mb-6">
+                    <h3 class="text-xl font-semibold text-center">How to Use</h3>
+                    <ul class="list-disc ml-5 sm:ml-6 text-gray-700 space-y-2 leading-relaxed">
+                        <li>STEP 1: Enter the number of interviews you want per week.</li>
+                        <li>STEP 2: Add all of the locations you want to search for jobs at.</li>
+                        <li>STEP 3: Provide your skills and experience.</li>
+                        <li>STEP 4: See your baseline resume. We will customize this resume.</li>
+                        <li>STEP 5: Submit your information and we will submit job applications on your behalf. It's that easy!</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Step 1: Interviews per week -->
+        <div id="step1">
+            <p class="mb-2">How many interviews do you want per week?</p>
+            <input type="range" id="interviewCount" class="w-full" min="1" max="10" value="5" oninput="updateSliderValue(this.value)" />
+            <p id="sliderValue" class="text-center text-gray-700">5</p>
+            <p id="sliderText" class="text-center text-gray-700 font-semibold">Do-able</p>
+            <div class="flex justify-end mt-4">
+                <button onclick="nextStep(1)" class="bg-blue-500 text-white px-4 py-2 rounded">Next</button>
+            </div>
+            <p class="p-4">Page 1 of 7</p>
+        </div>
+        
+        <!-- Step 2: Personal Information -->
+        <div id="step2" class="hidden">
+            <p class="mb-2">Enter your personal information:</p>
+            <div class="space-y-2">
+                <input type="text" placeholder="Full Name" class="border p-2 w-full rounded" />
+                <input type="email" placeholder="Email" class="border p-2 w-full rounded" />
+                <input type="tel" placeholder="Phone" class="border p-2 w-full rounded" />
+                <input type="text" placeholder="Location" class="border p-2 w-full rounded" />
+            </div>
+            <div class="flex justify-between mt-4">
+                <button onclick="prevStep(2)" class="bg-gray-300 text-gray-700 px-4 py-2 rounded">Back</button>
+                <button onclick="nextStep(2)" class="bg-blue-500 text-white px-4 py-2 rounded">Next</button>
+            </div>
+            <p class="p-4">Page 2 of 7</p>
+        </div>
+        
+        <!-- Step 3: Education -->
+        <div id="step3" class="hidden">
+            <h1 class="text-2xl font-bold text-gray-800 mb-6">Education History</h1>
+
+            <!-- Education Entry -->
+            <div class="bg-white p-6 rounded-lg shadow-sm mb-8 border border-gray-200" id="education-entry-1">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Education #1</h2>
+                
+                <div class="mb-4">
+                    <label for="school-name-1" class="block text-sm font-medium text-gray-700 mb-1">School/Institution Name*</label>
+                    <input type="text" id="school-name-1" name="school-name-1" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                
+                <div class="mb-4">
+                    <label for="degree-1" class="block text-sm font-medium text-gray-700 mb-1">Degree/Certificate</label>
+                    <input type="text" id="degree-1" name="degree-1" placeholder="e.g. Bachelor of Science, High School Diploma" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400">
+                </div>
+                
+                <div class="mb-4">
+                    <label for="field-of-study-1" class="block text-sm font-medium text-gray-700 mb-1">Field of Study/Major</label>
+                    <input type="text" id="field-of-study-1" name="field-of-study-1" placeholder="e.g. Computer Science, Business Administration" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400">
+                </div>
+                
+                <div class="mb-4">
+                    <label for="education-level-1" class="block text-sm font-medium text-gray-700 mb-1">Education Level</label>
+                    <select id="education-level-1" name="education-level-1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white">
+                        <option value="">Select Level</option>
+                        <option value="high-school">High School</option>
+                        <option value="associate">Associate Degree</option>
+                        <option value="bachelor">Bachelor's Degree</option>
+                        <option value="master">Master's Degree</option>
+                        <option value="doctorate">Doctorate/PhD</option>
+                        <option value="vocational">Vocational/Trade School</option>
+                        <option value="certificate">Certificate Program</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="start-date-1" class="block text-sm font-medium text-gray-700 mb-1">Start Date*</label>
+                        <input type="month" id="start-date-1" name="start-date-1" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label for="end-date-1" class="block text-sm font-medium text-gray-700 mb-1">End Date (or Expected)*</label>
+                        <input type="month" id="end-date-1" name="end-date-1" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                </div>
+                
+                <div class="mb-4 flex items-center">
+                    <input type="checkbox" id="current-school-1" name="current-school-1" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="current-school-1" class="ml-2 text-sm text-gray-700">I am currently studying here</label>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="location-1" class="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                    <input type="text" id="location-1" name="location-1" placeholder="City, State/Province, Country" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400">
+                </div>
+                
+                <div class="mb-4">
+                    <label for="gpa-1" class="block text-sm font-medium text-gray-700 mb-1">GPA/Grade (if applicable)</label>
+                    <input type="text" id="gpa-1" name="gpa-1" placeholder="e.g. 3.8/4.0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400">
+                </div>
+                
+                <div class="mb-4">
+                    <label for="honors-1" class="block text-sm font-medium text-gray-700 mb-1">Honors/Awards</label>
+                    <input type="text" id="honors-1" name="honors-1" placeholder="e.g. Magna Cum Laude, Dean's List" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400">
+                </div>
+                
+                <div class="mb-4">
+                    <label for="activities-1" class="block text-sm font-medium text-gray-700 mb-1">Extracurricular Activities</label>
+                    <textarea id="activities-1" name="activities-1" placeholder="List relevant clubs, organizations, sports, volunteer work, etc." class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400 h-24"></textarea>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="courses-1" class="block text-sm font-medium text-gray-700 mb-1">Relevant Coursework</label>
+                    <textarea id="courses-1" name="courses-1" placeholder="List key courses related to your target position or field" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400 h-24"></textarea>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="projects-1" class="block text-sm font-medium text-gray-700 mb-1">Academic Projects</label>
+                    <textarea id="projects-1" name="projects-1" placeholder="Describe significant projects, research, or thesis work" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400 h-24"></textarea>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="description-1" class="block text-sm font-medium text-gray-700 mb-1">Additional Description</label>
+                    <textarea id="description-1" name="description-1" placeholder="Add any other relevant information about your education experience" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400 h-24"></textarea>
+                </div>
+            </div>
+            
+            <div id="more-education-entries"></div>
+            
+            <button type="button" id="add-education" class="mb-6 inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                </svg>
+                Add Another Education Entry
+            </button>
+            
+            <div class="flex justify-between mt-8">
+                <button type="button" onclick="prevStep(3)" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Back
+                </button>
+                <button type="button" onclick="nextStep(3)" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                    Next
+                </button>
+            </div>
+            <p class="p-4">Page 3 of 7</p>
+        </div>
+        
+        <!-- Step 4: Skills -->
+        <div id="step4" class="hidden">
+            <p class="mb-2">Enter your skills(seperate each skill using a comma):</p>
+            <textarea id="skills" class="border p-2 w-full rounded"></textarea>
+            <div class="flex justify-between mt-4">
+                <button onclick="prevStep(4)" class="bg-gray-300 text-gray-700 px-4 py-2 rounded">Back</button>
+                <button onclick="nextStep(4)" class="bg-blue-500 text-white px-4 py-2 rounded">Next</button>
+            </div>
+            <p class="p-4">Page 4 of 7</p>
+        </div>
+        
+        <!-- Step 5: Experience -->
+        <div id="step5" class="hidden">
+            <p class="mb-2">Enter your work experiences:</p>
+            
+            <!-- Work Experience Entry 1 -->
+            <div class="work-experience-entry mb-4">
+                <label class="block mb-1 font-semibold">Work Experience 1</label>
+                
+                <!-- Start and End Dates -->
+                <div class="flex space-x-4 mb-2">
+                    <div class="w-1/2">
+                        <label class="block text-sm">Start Date</label>
+                        <input type="text" placeholder="e.g., June 2022" class="border p-2 w-full rounded" />
+                    </div>
+                    <div class="w-1/2">
+                        <label class="block text-sm">End Date</label>
+                        <input type="text" placeholder="e.g., March 2025 or Present" class="border p-2 w-full rounded" />
+                    </div>
+                </div>
+                
+                <!-- Job Title -->
+                <div class="mb-2">
+                    <label class="block text-sm">Job Title</label>
+                    <input type="text" placeholder="e.g., Software Engineer" class="border p-2 w-full rounded" />
+                </div>
+                
+                <!-- Description -->
+                <div class="mb-2">
+                    <label class="block text-sm">Description</label>
+                    <textarea placeholder="e.g., Managed a team in a fast-paced retail environment..." class="border p-2 w-full rounded" rows="2"></textarea>
+                </div>
+                
+                <!-- Key Responsibilities -->
+                <div class="mb-2">
+                    <label class="block text-sm">Key Responsibilities</label>
+                    <textarea placeholder="e.g., - Developed campaigns that increased engagement by 20%&#10;- Trained 15 new hires..." class="border p-2 w-full rounded" rows="4"></textarea>
+                </div>
+            </div>
+        
+            <!-- Optional: Add more entries dynamically (you’d need JS for this) -->
+            <p class="text-sm text-gray-500 mb-4">Add more experiences as needed in additional sections.</p>
+        
+            <div class="flex justify-between mt-4">
+                <button onclick="prevStep(5)" class="bg-gray-300 text-gray-700 px-4 py-2 rounded">Back</button>
+                <button onclick="nextStep(5)" class="bg-blue-500 text-white px-4 py-2 rounded">Next</button>
+            </div>
+            <p class="p-4">Page 5 of 7</p>
+        </div>
+        
+        <div id="step6" class="hidden">
+            <p class="mb-2">Enter your projects:</p>
+            <div id="project-container-1" class="project-container">
+                <p class="mb-2">Project 1 Name:</p>
+                <input type="text" id="project-name-1" class="border p-2 w-full rounded mb-2" placeholder="Enter project name">
+                <p class="mb-2">Project Details:</p>
+                <textarea id="project-details-1" class="border p-2 w-full rounded" placeholder="List technologies used, your role, and outcomes" rows="4"></textarea>
+            </div>
+            <div class="flex justify-between mt-4">
+                <button onclick="prevStep(6)" class="bg-gray-300 text-gray-700 px-4 py-2 rounded">Back</button>
+                <button onclick="addOtherProjects()" class="bg-green-500 text-white px-4 py-2 rounded mt-2">Add Another Project</button>
+                <button onclick="nextStep(6)" class="bg-blue-500 text-white px-4 py-2 rounded">Next</button>
+            </div>
+            <p>Page 6 of 7</p>
+        </div>
+
+        <!-- Step 7: Resume Preview (Previously Step 6) -->
+        <div id="step7" class="hidden">
+            <p class="mb-2">Your resume:</p>
+            <div id="resumeContainer" class="w-full border rounded-lg overflow-auto mt-2 mb-4 bg-white" style="height: 400px;"></div>
+            <div class="flex justify-between mt-4">
+                <button onclick="prevStep(7)" class="bg-gray-300 text-gray-700 px-4 py-2 rounded">Back</button>
+                <button onclick="submitApplication()" class="bg-green-500 text-white px-4 py-2 rounded">Submit</button>
+            </div>
+            <p class="p-4">Page 7 of 7</p>
+        </div>
+    </div>
+    
+    <script>
+        function nextStep(step) {
+            document.getElementById(`step${step}`).classList.add('hidden');
+            document.getElementById(`step${step + 1}`).classList.remove('hidden');
+
+            // Display resume when reaching the final step
+            if (step + 1 === 7) {
+                displaySampleResume();
+            }
+            
+            // If current step is 6 (projects), collect all project data
+            if (step === 6) {
+                const projectsData = [];
+                
+                // Loop through all project containers
+                for (let i = 1; i <= projectCount; i++) {
+                    const nameEl = document.getElementById(`project-name-${i}`);
+                    const detailsEl = document.getElementById(`project-details-${i}`);
+                    
+                    // Skip if elements don't exist (might be removed)
+                    if (nameEl && detailsEl) {
+                        projectsData.push({
+                            name: nameEl.value,
+                            details: detailsEl.value
+                        });
+                    }
+                }
+                
+                // Store collected projects data
+                localStorage.setItem('resumeProjects', JSON.stringify(projectsData));
+            }
+        }
+        
+        function prevStep(step) {
+            document.getElementById(`step${step}`).classList.add('hidden');
+            document.getElementById(`step${step - 1}`).classList.remove('hidden');
+        }
+        
+        function displaySampleResume() {
+            const container = document.getElementById("resumeContainer");
+            
+            // Create a sample resume display based on the provided content
+            const resumeContent = document.createElement("div");
+            resumeContent.className = "p-6 font-sans text-sm";
+            resumeContent.innerHTML = `
+                <div class="mb-4">
+                    <h1 class="text-xl font-bold">Daterson Scinece</h1>
+                    <div class="flex flex-wrap justify-between text-sm">
+                        <span>123 Valley Avenue, Atlanta, Georgia 30322</span>
+                        <span>GitHub: daterson841</span>
+                        <span>datasc@gatech.edu</span>
+                        <span>LinkedIn: daterseon-p-scinese</span>
+                        <span>(123) 456-7890</span>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <h2 class="text-lg font-bold uppercase border-b border-gray-300 mb-2">Education</h2>
+                    <div class="flex justify-between">
+                        <div>
+                            <p class="font-semibold">Georgia Institute of Technology, Atlanta, Georgia</p>
+                            <p>Bachelor of Science in Computer Science; Double Major: Economics</p>
+                            <p><span class="font-semibold">Relevant Coursework:</span> Data Structures & Algorithms, Discrete Structures, Data Science Computing, Artificial
+                            Intelligence, Machine Learning, Analysis of Algorithms, Computational Linguistics, Systems Programming,
+                            Data & Decision Analytics, Probability and Statistics, Linear Algebra, COVID 19 & the Economy, Game Theory</p>
+                        </div>
+                        <div class="text-right">
+                            <p>May 2025</p>
+                            <p>GPA: 3.7/4.0</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <h2 class="text-lg font-bold uppercase border-b border-gray-300 mb-2">Programming Skills</h2>
+                    <p>Proficient in Java, Python, SQL, Microsoft Office, Google Suite; Familiar with R, Angular, JavaScript, React, AWS, ARM, C</p>
+                </div>
+                
+                <div class="mb-4">
+                    <h2 class="text-lg font-bold uppercase border-b border-gray-300 mb-2">Experience</h2>
+                    <div class="mb-3">
+                        <div class="flex justify-between">
+                            <p class="font-semibold">Software Engineering Intern, TechCorp</p>
+                            <p>Summer 2024</p>
+                        </div>
+                        <ul class="list-disc list-inside">
+                            <li>Developed and maintained web applications using React and Node.js</li>
+                            <li>Collaborated with team members to implement new features and fix bugs</li>
+                            <li>Participated in code reviews and agile development processes</li>
+                        </ul>
+                    </div>
+                    <div class="mb-3">
+                        <div class="flex justify-between">
+                            <p class="font-semibold">Research Assistant, GT AI Lab</p>
+                            <p>2023 - Present</p>
+                        </div>
+                        <ul class="list-disc list-inside">
+                            <li>Assisted in developing machine learning models for natural language processing</li>
+                            <li>Analyzed data and presented findings to research team</li>
+                            <li>Published paper on sentiment analysis techniques in social media</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <h2 class="text-lg font-bold uppercase border-b border-gray-300 mb-2">Projects</h2>
+                    <div class="mb-2">
+                        <p class="font-semibold">Automated Job Application System</p>
+                        <p>Developed a web application to streamline job application process using React, Node.js, and MongoDB</p>
+                    </div>
+                    <div class="mb-2">
+                        <p class="font-semibold">Sentiment Analysis Tool</p>
+                        <p>Created a Python tool using NLTK and scikit-learn to analyze sentiment in customer reviews</p>
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML = "";
+            container.appendChild(resumeContent);
+            
+            // Simulate the scroll effect
+            setTimeout(smoothScroll, 100);
+        }
+        
+        function submitApplication() {
+            window.location.href = "homePage.html";
+        }
+        
+        function updateSliderValue(value) {
+            document.getElementById('sliderValue').textContent = value;
+            let text = "";
+            if (value >= 1 && value <= 4) {
+                text = "Realistic";
+            } else if (value >= 5 && value <= 6) {
+                text = "Do-able";
+            } else if (value >= 7 && value <= 10) {
+                text = "Not Realistic";
+            }
+            document.getElementById('sliderText').textContent = text;
+        }
+        
+        function smoothScroll() {
+            const container = document.getElementById("resumeContainer");
+            let start = 0;
+            const end = container.scrollHeight;
+            const duration = 2000;
+            const startTime = performance.now();
+            
+            function scrollStep(timestamp) {
+                const elapsed = timestamp - startTime;
+                const percentage = Math.min(elapsed / duration, 1);
+                container.scrollTop = percentage * end;
+                
+                if (elapsed < duration) {
+                    requestAnimationFrame(scrollStep);
+                }
+            }
+            
+            requestAnimationFrame(scrollStep);
+        }
+        
+        // Add event listener for the add education button
+        document.getElementById('add-education').addEventListener('click', function() {
+            // Add implementation for adding another education entry
+            alert('Add education functionality will be implemented here');
+        });
+        
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Any initialization code can go here
+        });
+        
+        // Track the number of projects
+        let projectCount = 1;
+
+        function addOtherProjects() {
+            projectCount++;
+            
+            // Create a container for the new project
+            const projectContainer = document.createElement('div');
+            projectContainer.className = 'project-container mt-4 border-t pt-4';
+            projectContainer.id = `project-container-${projectCount}`;
+            
+            // Create project name label
+            const nameLabel = document.createElement('p');
+            nameLabel.className = 'mb-2';
+            nameLabel.textContent = `Project ${projectCount} Name:`;
+            
+            // Create project name input
+            const nameInput = document.createElement('input');
+            nameInput.type = 'text';
+            nameInput.className = 'border p-2 w-full rounded mb-2';
+            nameInput.id = `project-name-${projectCount}`;
+            nameInput.placeholder = 'Enter project name';
+            
+            // Create project details label
+            const detailsLabel = document.createElement('p');
+            detailsLabel.className = 'mb-2';
+            detailsLabel.textContent = 'Project Details:';
+            
+            // Create project details textarea
+            const detailsTextarea = document.createElement('textarea');
+            detailsTextarea.className = 'border p-2 w-full rounded';
+            detailsTextarea.id = `project-details-${projectCount}`;
+            detailsTextarea.placeholder = 'List technologies used, your role, and outcomes';
+            detailsTextarea.rows = 4;
+            
+            // Create remove button
+            const removeButton = document.createElement('button');
+            removeButton.className = 'bg-red-500 text-white px-3 py-1 rounded mt-2';
+            removeButton.textContent = 'Remove Project';
+            removeButton.onclick = function() {
+                document.getElementById(`project-container-${projectCount}`).remove();
+                projectCount--;
+            };
+            
+            // Append all elements to the container
+            projectContainer.appendChild(nameLabel);
+            projectContainer.appendChild(nameInput);
+            projectContainer.appendChild(detailsLabel);
+            projectContainer.appendChild(detailsTextarea);
+            projectContainer.appendChild(removeButton);
+            
+            // Get the parent element (step6 div)
+            const step6Div = document.getElementById('step6');
+            
+            // Insert the new project container before the navigation buttons
+            const buttonContainer = document.querySelector('#step6 .flex.justify-between');
+            step6Div.insertBefore(projectContainer, buttonContainer);
+        }
+
+        
+    </script>
+
+<script>
+    // Popup handling logic
+    document.getElementById("openPopupBtn").addEventListener("click", function() {
+        document.getElementById("popupOverlay").classList.remove("opacity-0", "pointer-events-none");
+        document.getElementById("popup").classList.remove("scale-95");
+        document.getElementById("popup").classList.add("scale-100");
+    });
+
+    document.getElementById("closePopupBtn").addEventListener("click", function() {
+        document.getElementById("popupOverlay").classList.add("opacity-0", "pointer-events-none");
+        document.getElementById("popup").classList.remove("scale-100");
+        document.getElementById("popup").classList.add("scale-95");
+    });
+
+    // Close when clicking outside of popup
+    document.getElementById("popupOverlay").addEventListener("click", function(e) {
+        if (e.target === document.getElementById("popupOverlay")) {
+            document.getElementById("popupOverlay").classList.add("opacity-0", "pointer-events-none");
+            document.getElementById("popup").classList.remove("scale-100");
+            document.getElementById("popup").classList.add("scale-95");
+        }
+    });
+
+    // Keyword matching logic
+    document.getElementById("matchButton").addEventListener("click", function() {
+        // Get the inputs
+        const jobDescription = document.getElementById("jobDescription").value.toLowerCase();
+        const resume = document.getElementById("resume").value.toLowerCase();
+        
+        // Split the text into individual words
+        const jobDescriptionWords = jobDescription.split(/\s+/);
+        const resumeWords = resume.split(/\s+/);
+        
+        // Find the matching words between the resume and the job description
+        const matchedKeywords = resumeWords.filter(word => jobDescriptionWords.includes(word));
+        
+        // Display the result
+        const matchResultContainer = document.getElementById("matchResult");
+        if (matchedKeywords.length > 0) {
+            matchResultContainer.innerHTML = `<p class="text-green-600 font-semibold">Matched Keywords: <span class="text-black">${matchedKeywords.join(', ')}</span></p>`;
+        } else {
+            matchResultContainer.innerHTML = `<p class="text-red-600">No keywords matched. Try adjusting your resume.</p>`;
+        }
+    });
+</script>
+
+</body>
+</html>
